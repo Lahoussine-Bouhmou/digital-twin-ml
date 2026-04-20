@@ -1489,8 +1489,16 @@ class MainWindow(QMainWindow):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self._layout_data: dict | None = None
-        self._scene_actors: list[Any] = []
-        self._measurement_actors: list[Any] = []
+        self._scene_actors_by_group: dict[str, list[Any]] = {
+            "deck": [],
+            "boundary": [],
+            "grid": [],
+            "equipment": [],
+            "equipment_label": [],
+            "dimension": [],
+            "measurement": [],
+            "highlight": [],
+        }
         self._measurement_result = None
         self._measure_engine: MeasurementEngine | None = None
         self._project_path: str | None = None
@@ -1737,23 +1745,111 @@ class MainWindow(QMainWindow):
         self._update_status_info()
         self._tab_widget.setCurrentIndex(1)  # Equipment tab
 
+    # Helpers
+    def _clear_actor_groups(self, *groups: str):
+        for group in groups:
+            actors = self._scene_actors_by_group.get(group, [])
+            for actor in actors:
+                try:
+                    self._plotter.remove_actor(actor)
+                except Exception:
+                    pass
+            self._scene_actors_by_group[group] = []
+
+        if "highlight" in groups:
+            self._highlight_actor = None
+
+    def _add_mesh_dicts(self, mesh_dicts: list[dict[str, Any]]):
+        """Ajoute les mesh dicts en batchant les labels par groupe/couleur."""
+        label_batches: dict[tuple[str, str], dict[str, list[Any]]] = {}
+
+        for md in mesh_dicts:
+            group = md.get("group", "misc")
+
+            if "label" in md:
+                color = md.get("color", "#cdd6f4")
+                key = (group, color)
+                batch = label_batches.setdefault(
+                    key,
+                    {"points": [], "labels": []},
+                )
+                batch["points"].append(md["position"])
+                batch["labels"].append(md["label"])
+                continue
+
+            if "mesh" not in md:
+                continue
+
+            kwargs = {
+                "color": md.get("color", "white"),
+                "opacity": md.get("opacity", 1.0),
+                "show_edges": False,
+            }
+            if md.get("style") == "wireframe":
+                kwargs["style"] = "wireframe"
+            if "line_width" in md:
+                kwargs["line_width"] = md["line_width"]
+
+            actor = self._plotter.add_mesh(md["mesh"], **kwargs)
+            if actor is not None:
+                self._scene_actors_by_group.setdefault(group, []).append(actor)
+
+        for (group, color), batch in label_batches.items():
+            actor = self._plotter.add_point_labels(
+                batch["points"],
+                batch["labels"],
+                font_size=10,
+                text_color=color,
+                shape=None,
+                render_points_as_spheres=False,
+                point_size=0,
+                always_visible=True,
+            )
+            if actor is not None:
+                self._scene_actors_by_group.setdefault(group, []).append(actor)
+
+    def _rebuild_measurement_group(self):
+        self._clear_actor_groups("measurement")
+
+        if self._measurement_result is None or not hasattr(self, "_builder"):
+            return
+
+        self._add_mesh_dicts(
+            self._builder.build_measurement(self._measurement_result)
+        )
+
+    def _rebuild_dimension_group(self):
+        """Rebuild uniquement les dimensions, sans refaire toute la scène."""
+        self._clear_actor_groups("dimension")
+
+        if not self._show_dimensions:
+            return
+
+        scene_layout = self._current_scene_layout()
+        if not scene_layout:
+            return
+
+        dim_builder = SceneBuilder(scene_layout)
+        dim_meshes = [
+            md for md in dim_builder.build(show_dimensions=True)
+            if md.get("group") == "dimension"
+        ]
+        self._add_mesh_dicts(dim_meshes)
+
     # -- Scene management ---------------------------------------------------
 
     def _rebuild_scene(self, reset_camera: bool = True):
         """Clear and rebuild the 3D scene from layout data."""
-        for actor in self._scene_actors:
-            try:
-                self._plotter.remove_actor(actor)
-            except Exception:
-                pass
-        self._scene_actors.clear()
-        for actor in self._measurement_actors:
-            try:
-                self._plotter.remove_actor(actor)
-            except Exception:
-                pass
-        self._measurement_actors.clear()
-        self._highlight_actor = None
+        self._clear_actor_groups(
+            "deck",
+            "boundary",
+            "grid",
+            "equipment",
+            "equipment_label",
+            "dimension",
+            "measurement",
+            "highlight",
+        )
 
         scene_layout = self._current_scene_layout()
         if not scene_layout:
@@ -1764,21 +1860,15 @@ class MainWindow(QMainWindow):
         mesh_dicts = builder.build(show_dimensions=self._show_dimensions)
         self._builder = builder
 
-        for md in mesh_dicts:
-            actor = self._add_mesh_dict(md)
-            if actor is not None:
-                self._scene_actors.append(actor)
+        self._add_mesh_dicts(mesh_dicts)
 
-        # Re-render the active measurement overlay (survives edits/toggles)
         if self._measurement_result is not None:
-            for md in builder.build_measurement(self._measurement_result):
-                actor = self._add_mesh_dict(md)
-                if actor is not None:
-                    self._measurement_actors.append(actor)
+            self._rebuild_measurement_group()
 
         if reset_camera or self._first_render:
             self._plotter.reset_camera()
             self._first_render = False
+
         self._plotter.render()
 
     def _add_mesh_dict(self, md: dict[str, Any]) -> Any:
@@ -1898,20 +1988,13 @@ class MainWindow(QMainWindow):
     def _on_measurement_ready(self, result):
         """Render the newly computed measurement in the scene."""
         self._measurement_result = result
-        for actor in self._measurement_actors:
-            try:
-                self._plotter.remove_actor(actor)
-            except Exception:
-                pass
-        self._measurement_actors.clear()
 
         if not hasattr(self, "_builder"):
             return
-        for md in self._builder.build_measurement(result):
-            actor = self._add_mesh_dict(md)
-            if actor is not None:
-                self._measurement_actors.append(actor)
+
+        self._rebuild_measurement_group()
         self._plotter.render()
+
         self.statusBar().showMessage(
             "Measure: %s <-> %s"
             % (result.ref_a.display_name, result.ref_b.display_name)
@@ -1919,50 +2002,42 @@ class MainWindow(QMainWindow):
 
     def _on_measurement_cleared(self):
         """Strip measurement overlay from the 3D scene."""
-        for actor in self._measurement_actors:
-            try:
-                self._plotter.remove_actor(actor)
-            except Exception:
-                pass
-        self._measurement_actors.clear()
+        self._clear_actor_groups("measurement")
         self._measurement_result = None
         self._plotter.render()
 
     def _on_toggle_dims(self, checked: bool):
         self._show_dimensions = checked
         if self._layout_data:
-            self._rebuild_scene(reset_camera=False)
+            self._rebuild_dimension_group()
+            self._plotter.render()   
 
     # -- Equipment selection ------------------------------------------------
 
     def _on_equipment_selected(self, tag: str):
         """Fly camera to selected equipment and highlight it."""
-        # Keep Edit tab's target list in sync with the chosen tag.
         self._edit_tab.select_tag(tag)
 
         if not hasattr(self, "_builder"):
             return
+
         center = self._builder.get_equipment_center(tag)
         if not center:
             return
 
-        # Remove old highlight
-        if self._highlight_actor is not None:
-            try:
-                self._plotter.remove_actor(self._highlight_actor)
-            except Exception:
-                pass
-            self._highlight_actor = None
+        self._clear_actor_groups("highlight")
 
-        # Add highlight sphere
         import pyvista as pv
         sphere = pv.Sphere(radius=0.4, center=center)
         self._highlight_actor = self._plotter.add_mesh(
-            sphere, color="#ffff00", opacity=0.35, show_edges=False,
+            sphere,
+            color="#ffff00",
+            opacity=0.35,
+            show_edges=False,
         )
-        self._scene_actors.append(self._highlight_actor)
+        if self._highlight_actor is not None:
+            self._scene_actors_by_group["highlight"].append(self._highlight_actor)
 
-        # Fly to equipment
         self._plotter.camera.focal_point = center
         self._plotter.render()
         self.statusBar().showMessage("Selected: %s" % tag)

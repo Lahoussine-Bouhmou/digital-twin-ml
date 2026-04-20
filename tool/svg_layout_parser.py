@@ -390,44 +390,37 @@ class SvgLayoutParser:
             transform = g.get("transform", "")
             tx, ty, rot = parse_transform(transform)
 
-            # Extract Visio metadata
             title_el = g.find("svg:title", NS)
             title = title_el.text.strip() if title_el is not None and title_el.text else ""
 
+            desc_el = g.find("svg:desc", NS)
+            text_el = g.find(".//svg:text", NS)
+            text_content = "".join(text_el.itertext()).strip() if text_el is not None else ""
+
             visio_class = ""
             visio_subtype = ""
-            for ud in g.findall(".//v:ud", NS):
+            tag = ""
+
+            ud_nodes = list(g.findall(".//v:ud", NS))
+            for ud in ud_nodes:
                 name = ud.get("{%s}nameU" % NS["v"], "")
                 val = ud.get("{%s}val" % NS["v"], "")
+
                 if name == "ShapeClass":
                     visio_class = val.replace("VT4(", "").rstrip(")")
                 elif name == "SubType" and "VT4(" in (val or ""):
                     visio_subtype = val.replace("VT4(", "").rstrip(")")
-
-            # Equipment tag from custom properties or desc
-            tag = ""
-            desc_el = g.find("svg:desc", NS)
-            if desc_el is not None and desc_el.text:
-                txt = desc_el.text.strip()
-                if looks_like_equipment_tag(txt):
-                    tag = txt
-
-            # Also check v:cp for PEComponentTag or text elements
-            for ud in g.findall(".//v:ud", NS):
-                name = ud.get("{%s}nameU" % NS["v"], "")
-                val = ud.get("{%s}val" % NS["v"], "")
-                if name == "PEComponentTag" and val:
+                elif name == "PEComponentTag" and val:
                     clean = val.replace("VT4(", "").rstrip(")")
                     if clean and clean != "E-0":
                         tag = clean
 
-            # Check for text content as equipment label
-            text_el = g.find(".//svg:text", NS)
-            text_content = ""
-            if text_el is not None:
-                text_content = "".join(text_el.itertext()).strip()
+            if not tag and desc_el is not None and desc_el.text:
+                txt = desc_el.text.strip()
+                if looks_like_equipment_tag(txt):
+                    tag = txt
 
-            # --- Classify shape ---
+            group_added_shape = False
 
             # 1. Rectangle
             for rect in g.findall(".//svg:rect", NS):
@@ -440,74 +433,96 @@ class SvgLayoutParser:
                     cx_local = rx + rw / 2
                     cy_local = ry_local + rh / 2
                     cx_abs, cy_abs = cx_local + tx, cy_local + ty
+
                     if rot != 0:
-                        # Rotation in Visio SVG is around the translate origin
-                        cx_abs, cy_abs = apply_rotation(
-                            cx_local, cy_local, rot
-                        )
+                        cx_abs, cy_abs = apply_rotation(cx_local, cy_local, rot)
                         cx_abs += tx
                         cy_abs += ty
 
                     self.shapes.append(SvgShape(
-                        svg_id=svg_id, shape_type="rect",
-                        title=title, visio_class=visio_class,
-                        visio_subtype=visio_subtype, tag=tag,
-                        cx_pts=cx_abs, cy_pts=cy_abs,
-                        width_pts=rw, height_pts=rh,
-                        rotation_deg=rot, css_class=cls,
+                        svg_id=svg_id,
+                        shape_type="rect",
+                        title=title,
+                        visio_class=visio_class,
+                        visio_subtype=visio_subtype,
+                        tag=tag,
+                        cx_pts=cx_abs,
+                        cy_pts=cy_abs,
+                        width_pts=rw,
+                        height_pts=rh,
+                        rotation_deg=rot,
+                        css_class=cls,
                     ))
+                    group_added_shape = True
                     break
 
             # 2. Ellipse / Circle
-            for ell in g.findall(".//svg:ellipse", NS):
-                cls = ell.get("class", "")
-                if self._shape_is_equipment(cls, visio_class, title):
-                    ecx = float(ell.get("cx", 0))
-                    ecy = float(ell.get("cy", 0))
-                    erx = float(ell.get("rx", 0))
-                    ery = float(ell.get("ry", 0))
-                    cx_abs = tx + ecx
-                    cy_abs = ty + ecy
-                    self.shapes.append(SvgShape(
-                        svg_id=svg_id, shape_type="ellipse",
-                        title=title, visio_class=visio_class,
-                        visio_subtype=visio_subtype, tag=tag,
-                        cx_pts=cx_abs, cy_pts=cy_abs,
-                        rx_pts=erx, ry_pts=ery,
-                        rotation_deg=rot, css_class=cls,
-                    ))
-                    break
+            if not group_added_shape:
+                for ell in g.findall(".//svg:ellipse", NS):
+                    cls = ell.get("class", "")
+                    if self._shape_is_equipment(cls, visio_class, title):
+                        ecx = float(ell.get("cx", 0))
+                        ecy = float(ell.get("cy", 0))
+                        erx = float(ell.get("rx", 0))
+                        ery = float(ell.get("ry", 0))
+                        cx_abs = tx + ecx
+                        cy_abs = ty + ecy
 
-            for circ in g.findall(".//svg:circle", NS):
-                cls = circ.get("class", "")
-                if self._shape_is_equipment(cls, visio_class, title):
-                    ccx = float(circ.get("cx", 0))
-                    ccy = float(circ.get("cy", 0))
-                    cr = float(circ.get("r", 0))
-                    cx_abs = tx + ccx
-                    cy_abs = ty + ccy
-                    self.shapes.append(SvgShape(
-                        svg_id=svg_id, shape_type="ellipse",
-                        title=title, visio_class=visio_class,
-                        visio_subtype=visio_subtype, tag=tag,
-                        cx_pts=cx_abs, cy_pts=cy_abs,
-                        rx_pts=cr, ry_pts=cr,
-                        rotation_deg=rot, css_class=cls,
-                    ))
-                    break
+                        self.shapes.append(SvgShape(
+                            svg_id=svg_id,
+                            shape_type="ellipse",
+                            title=title,
+                            visio_class=visio_class,
+                            visio_subtype=visio_subtype,
+                            tag=tag,
+                            cx_pts=cx_abs,
+                            cy_pts=cy_abs,
+                            rx_pts=erx,
+                            ry_pts=ery,
+                            rotation_deg=rot,
+                            css_class=cls,
+                        ))
+                        group_added_shape = True
+                        break
 
-            # 3. Path - could be stadium vessel, dimension arrow, or boundary
+            if not group_added_shape:
+                for circ in g.findall(".//svg:circle", NS):
+                    cls = circ.get("class", "")
+                    if self._shape_is_equipment(cls, visio_class, title):
+                        ccx = float(circ.get("cx", 0))
+                        ccy = float(circ.get("cy", 0))
+                        cr = float(circ.get("r", 0))
+                        cx_abs = tx + ccx
+                        cy_abs = ty + ccy
+
+                        self.shapes.append(SvgShape(
+                            svg_id=svg_id,
+                            shape_type="ellipse",
+                            title=title,
+                            visio_class=visio_class,
+                            visio_subtype=visio_subtype,
+                            tag=tag,
+                            cx_pts=cx_abs,
+                            cy_pts=cy_abs,
+                            rx_pts=cr,
+                            ry_pts=cr,
+                            rotation_deg=rot,
+                            css_class=cls,
+                        ))
+                        group_added_shape = True
+                        break
+
+            # 3. Paths
             for path in g.findall(".//svg:path", NS):
                 cls = path.get("class", "")
                 d = path.get("d", "")
                 if not d:
                     continue
 
-                # 3a. Stadium / capsule (horizontal vessel)
                 stadium = is_stadium_path(d)
                 if stadium and (visio_class == "Equipment" or
                                 title in ("Vessel", "Column", "Tank",
-                                          "Drum", "Separator")):
+                                        "Drum", "Separator")):
                     local_cx = (stadium["x_min"] + stadium["x_max"]) / 2
                     local_cy = (stadium["y_min"] + stadium["y_max"]) / 2
                     w = stadium["width"]
@@ -517,7 +532,6 @@ class SvgLayoutParser:
                         cx_abs, cy_abs = apply_rotation(local_cx, local_cy, rot)
                         cx_abs += tx
                         cy_abs += ty
-                        # After rotation, width/height swap for 90 deg
                         if abs(rot) in (90, -90, 270):
                             w, h = h, w
                     else:
@@ -525,38 +539,36 @@ class SvgLayoutParser:
                         cy_abs = ty + local_cy
 
                     self.shapes.append(SvgShape(
-                        svg_id=svg_id, shape_type="stadium",
-                        title=title, visio_class=visio_class,
-                        visio_subtype=visio_subtype, tag=tag,
-                        cx_pts=cx_abs, cy_pts=cy_abs,
-                        width_pts=w, height_pts=h,
-                        rotation_deg=rot, css_class=cls,
+                        svg_id=svg_id,
+                        shape_type="stadium",
+                        title=title,
+                        visio_class=visio_class,
+                        visio_subtype=visio_subtype,
+                        tag=tag,
+                        cx_pts=cx_abs,
+                        cy_pts=cy_abs,
+                        width_pts=w,
+                        height_pts=h,
+                        rotation_deg=rot,
+                        css_class=cls,
                     ))
+                    group_added_shape = True
                     continue
 
-                # 3b. Dimension arrow (has marker class)
                 if self._is_dimension_arrow_class(cls):
-                    # Extract line span from path
-                    nums = [float(x) for x in re.findall(
-                        r"[-+]?\d*\.?\d+", d
-                    )]
+                    nums = [float(x) for x in re.findall(r"[-+]?\d*\.?\d+", d)]
                     if len(nums) >= 4:
-                        # Path coords are x,y pairs; take first and last x
-                        xs = nums[0::2]  # every other starting from 0
+                        xs = nums[0::2]
                         ys = nums[1::2]
                         x_span = max(xs) - min(xs)
                         y_span = max(ys) - min(ys)
-                        # Span is along the longer axis (should be one-dimensional)
                         span = max(x_span, y_span)
                         corrected_span = span + MARKER_TOTAL
 
-                        # Determine absolute positions of arrow tips
-                        # and the perpendicular offset (used to keep each
-                        # dimension at its original stack position).
-                        if abs(rot) < 1:  # horizontal
+                        if abs(rot) < 1:
                             start = tx + min(xs) - MARKER_SETBACK_START
                             end = tx + max(xs) + MARKER_SETBACK_END
-                            perp = ty + ys[0]  # SVG y of the arrow
+                            perp = ty + ys[0]
                             self.dim_arrows[svg_id] = {
                                 "direction": "horizontal",
                                 "span_pts": corrected_span,
@@ -564,19 +576,16 @@ class SvgLayoutParser:
                                 "end_abs": end,
                                 "perp_abs": perp,
                             }
-                        else:  # vertical (rotated 90 or -90)
-                            # rotate(90):  y_global = ty + x_local
-                            #              x_global = tx - y_local
-                            # rotate(-90): y_global = ty - x_local
-                            #              x_global = tx + y_local
-                            if rot > 0:  # rotate(90)
+                        else:
+                            if rot > 0:
                                 y_min = ty + min(xs) - MARKER_SETBACK_START
                                 y_max = ty + max(xs) + MARKER_SETBACK_END
                                 perp = tx - ys[0]
-                            else:  # rotate(-90)
+                            else:
                                 y_min = ty - max(xs) - MARKER_SETBACK_END
                                 y_max = ty - min(xs) + MARKER_SETBACK_START
                                 perp = tx + ys[0]
+
                             self.dim_arrows[svg_id] = {
                                 "direction": "vertical",
                                 "span_pts": corrected_span,
@@ -586,41 +595,27 @@ class SvgLayoutParser:
                             }
                     continue
 
-                # 3c. Boundary dashed line
                 if self._is_boundary_class(cls):
-                    # Store for potential origin detection
                     continue
 
-            # 4. Text labels - equipment tags or dimension values
-            # Check if this group added an equipment shape
-            added_shape = any(s.svg_id == svg_id for s in self.shapes)
-
-            # Determine the best tag/text for this group
             best_text = tag or text_content
             dim_value = None
 
             if best_text and re.match(r"^\d+$", best_text):
                 dim_value = int(best_text)
-                best_text = None  # it's a dimension, not a tag
+                best_text = None
 
-            # Equipment tag label (not attached to an equipment shape)
-            if best_text and looks_like_equipment_tag(best_text):
-                if not added_shape:
-                    text_rect = g.find(".//v:textRect", NS)
-                    lcx, lcy = 0, 0
-                    if text_rect is not None:
-                        lcx = float(text_rect.get("cx", 0))
-                        lcy = float(text_rect.get("cy", 0))
-                    # Apply group rotation to local textRect centre so the
-                    # nearest-shape match in _match_labels_to_shapes uses
-                    # the true world-space label position.
-                    if rot != 0:
-                        lcx, lcy = apply_rotation(lcx, lcy, rot)
-                    self.label_texts.append((
-                        svg_id, best_text, tx, ty, lcx, lcy
-                    ))
+            if best_text and looks_like_equipment_tag(best_text) and not group_added_shape:
+                text_rect = g.find(".//v:textRect", NS)
+                lcx, lcy = 0, 0
+                if text_rect is not None:
+                    lcx = float(text_rect.get("cx", 0))
+                    lcy = float(text_rect.get("cy", 0))
+                if rot != 0:
+                    lcx, lcy = apply_rotation(lcx, lcy, rot)
 
-            # Dimension value (add only once per shape group)
+                self.label_texts.append((svg_id, best_text, tx, ty, lcx, lcy))
+
             if dim_value is not None:
                 self.dim_labels.append(DimAnnotation(
                     svg_id=svg_id,
@@ -630,7 +625,6 @@ class SvgLayoutParser:
                     label_rot=rot,
                 ))
 
-            # Grid labels: single letter or digit in circled shapes
             if (text_content and
                     re.match(r"^[A-Z0-9]$", text_content) and
                     not tag):
@@ -642,7 +636,9 @@ class SvgLayoutParser:
                 abs_x = tx + lcx
                 abs_y = ty + lcy
                 self.grid_labels.append(GridLabel(
-                    label=text_content, x_pts=abs_x, y_pts=abs_y
+                    label=text_content,
+                    x_pts=abs_x,
+                    y_pts=abs_y,
                 ))
 
     # -------------------------------------------------------------------
@@ -651,19 +647,27 @@ class SvgLayoutParser:
     def _match_labels_to_shapes(self):
         """Associate text labels with nearest equipment shape."""
         unlabeled = [s for s in self.shapes if not s.tag]
-        for sid, text, tx, ty, lcx, lcy in self.label_texts:
+
+        for _sid, text, tx, ty, lcx, lcy in self.label_texts:
             abs_x = tx + lcx
             abs_y = ty + lcy
-            best, best_d = None, 1e9
+
+            best = None
+            best_d = 1e9
+
             for s in unlabeled:
                 d = math.hypot(s.cx_pts - abs_x, s.cy_pts - abs_y)
                 if d < best_d:
                     best_d = d
                     best = s
+
             if best and best_d < 500:
                 best.tag = text
+                try:
+                    unlabeled.remove(best)
+                except ValueError:
+                    pass
 
-        # Assign generic tags to any remaining unlabeled shapes
         idx = 1
         for s in self.shapes:
             if not s.tag:
@@ -945,15 +949,22 @@ class SvgLayoutParser:
 
         try:
             import openpyxl
-            wb = openpyxl.load_workbook(self.excel_path, data_only=True)
+
+            wb = openpyxl.load_workbook(
+                self.excel_path,
+                data_only=True,
+                read_only=True,
+            )
             ws = wb.active
 
-            # Map worksheet headers to canonical keys (first match wins)
             col_idx_by_key = {}
             weight_header = ""
-            for col_idx, cell in enumerate(ws[1], 1):
+
+            header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=False), [])
+            for col_idx, cell in enumerate(header_row, 1):
                 if cell.value is None:
                     continue
+
                 norm = str(cell.value).strip().lower()
                 for canonical, aliases in _EXCEL_HEADER_ALIASES.items():
                     if canonical in col_idx_by_key:
@@ -967,12 +978,10 @@ class SvgLayoutParser:
             tag_col = col_idx_by_key.get("tag")
             if not tag_col:
                 self.warnings.append(
-                    "Excel file has no recognizable 'tag' column; "
-                    "skipping merge"
+                    "Excel file has no recognizable 'tag' column; skipping merge"
                 )
                 return
 
-            # Tonnes detection on weight column header
             wh_lower = weight_header.lower()
             weight_is_tonnes = ("(t)" in wh_lower) or ("(mt)" in wh_lower)
 
@@ -982,62 +991,66 @@ class SvgLayoutParser:
             )
 
             excel_data = {}
-            for row in ws.iter_rows(min_row=2, values_only=False):
-                tag_val = row[tag_col - 1].value
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row:
+                    continue
+
+                tag_val = row[tag_col - 1] if tag_col - 1 < len(row) else None
                 if not tag_val:
                     continue
+
                 tag_val = str(tag_val).strip()
                 entry = {}
+
                 for key in numeric_keys:
                     col = col_idx_by_key.get(key)
-                    if not col:
+                    if not col or col - 1 >= len(row):
                         continue
-                    v = row[col - 1].value
+
+                    v = row[col - 1]
                     if v is None or v == "":
                         continue
+
                     try:
                         entry[key] = float(v)
                     except (TypeError, ValueError):
                         continue
+
                 if entry:
                     excel_data[tag_val] = entry
 
-            if weight_is_tonnes and any(
-                "weight_kg" in e for e in excel_data.values()
-            ):
+            if weight_is_tonnes and any("weight_kg" in e for e in excel_data.values()):
                 self.warnings.append(
-                    "Excel weight column '%s' interpreted as tonnes, "
-                    "converted to kg" % weight_header
+                    "Excel weight column '%s' interpreted as tonnes, converted to kg"
+                    % weight_header
                 )
                 for entry in excel_data.values():
                     if "weight_kg" in entry:
                         entry["weight_kg"] *= 1000.0
 
-            # Apply to equipment list
             applied_heights = []
             for eq in equipment_list:
                 tag = eq.get("tag", "")
-                if tag in excel_data:
-                    ed = excel_data[tag]
-                    for key, val in ed.items():
-                        eq[key] = round(val)
-                        if key == "height_mm":
-                            applied_heights.append(eq)
-                    eq["defaults_applied"] = [
-                        k for k in eq.get("defaults_applied", [])
-                        if k not in ed
-                    ]
-                    if "data_source" in eq:
-                        eq["data_source"] = "svg_geometry+excel"
+                if tag not in excel_data:
+                    continue
 
-            # Metres-height auto-conversion: if every applied height < 50,
-            # treat as metres and scale to mm.
-            if applied_heights and all(
-                eq["height_mm"] < 50 for eq in applied_heights
-            ):
+                ed = excel_data[tag]
+                for key, val in ed.items():
+                    eq[key] = round(val)
+                    if key == "height_mm":
+                        applied_heights.append(eq)
+
+                eq["defaults_applied"] = [
+                    k for k in eq.get("defaults_applied", [])
+                    if k not in ed
+                ]
+
+                if "data_source" in eq:
+                    eq["data_source"] = "svg_geometry+excel"
+
+            if applied_heights and all(eq["height_mm"] < 50 for eq in applied_heights):
                 self.warnings.append(
-                    "Excel heights appear to be in metres; "
-                    "auto-converted to mm"
+                    "Excel heights appear to be in metres; auto-converted to mm"
                 )
                 for eq in applied_heights:
                     eq["height_mm"] = int(eq["height_mm"] * 1000)

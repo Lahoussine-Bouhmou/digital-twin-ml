@@ -44,19 +44,73 @@ DECK_THICKNESS = 0.012
 # ---------------------------------------------------------------------------
 class SceneBuilder:
     """Build a list of mesh-dicts from a parsed layout JSON dict."""
-
+    
     def __init__(self, layout: dict):
         self.layout = layout
         self.scale = MM_TO_M
         self.meshes: list[dict[str, Any]] = []
         self._tag_to_mesh: dict[str, dict] = {}
 
+        # caches pour accélérer le picking / les bounds
+        self._equipment_by_tag: dict[str, dict] = {}
+        self._bounds_by_tag: dict[str, tuple] = {}
+        self._index_layout()
+
     # ----- main entry point ------------------------------------------------
+
+    def _index_layout(self):
+        """Pré-indexe les équipements et leurs bounds."""
+        self._equipment_by_tag.clear()
+        self._bounds_by_tag.clear()
+
+        for eq in self.layout.get("equipment", []):
+            tag = eq.get("tag", "")
+            if not tag:
+                continue
+            self._equipment_by_tag[tag] = eq
+            self._bounds_by_tag[tag] = self._compute_equipment_bounds(eq)
+
+    def _compute_equipment_bounds(self, eq: dict) -> tuple:
+        """Calcule les bounds logiques complets d'un équipement en mm."""
+        cx = eq.get("center_x_mm", 0)
+        cy = eq.get("center_y_mm", 0)
+        et = eq.get("equipment_type", "box")
+        el = eq.get("elevation_mm", 0)
+
+        if et == "box":
+            hw = eq.get("width_mm", 0) / 2.0
+            hd = eq.get("depth_mm", 0) / 2.0
+            h = eq.get("height_mm", 0)
+            zmin, zmax = el, el + h
+
+        elif et == "vertical_vessel":
+            r = eq.get("diameter_mm", 0) / 2.0
+            hw, hd = r, r
+            h = eq.get("height_mm", 0)
+            zmin, zmax = el, el + h
+
+        elif et == "horizontal_vessel":
+            hl = eq.get("length_mm", 0) / 2.0
+            r = eq.get("diameter_mm", 0) / 2.0
+            rot = eq.get("rotation_deg", 0) or 0
+            rad = math.radians(rot)
+            hw = abs(hl * math.cos(rad)) + abs(r * math.sin(rad))
+            hd = abs(hl * math.sin(rad)) + abs(r * math.cos(rad))
+            saddle_h = eq.get("saddle_height_mm", round(r * 2 * 0.4))
+            zmin, zmax = el, el + saddle_h + r * 2
+
+        else:
+            hw = eq.get("width_mm", 1000) / 2.0
+            hd = eq.get("depth_mm", 1000) / 2.0
+            zmin, zmax = el, el + eq.get("height_mm", 2000)
+
+        return (cx - hw, cx + hw, cy - hd, cy + hd, zmin, zmax)
 
     def build(self, show_dimensions: bool = True) -> list[dict[str, Any]]:
         """Generate all meshes and return list of mesh dicts."""
         self.meshes.clear()
         self._tag_to_mesh.clear()
+        self._index_layout()
 
         self._build_deck_plate()
         self._build_boundary()
@@ -76,43 +130,8 @@ class SceneBuilder:
         return None
 
     def get_equipment_bounds(self, tag: str) -> tuple | None:
-        """Return full logical bounds (xmin, xmax, ymin, ymax, zmin, zmax)
-        in mm for an equipment item, derived from the equipment dict so
-        horizontal-vessel heads/saddles are included in the hit box.
-        """
-        for eq in self.layout.get("equipment", []):
-            if eq.get("tag") != tag:
-                continue
-            cx = eq["center_x_mm"]
-            cy = eq["center_y_mm"]
-            et = eq.get("equipment_type", "box")
-            el = eq.get("elevation_mm", 0)
-            if et == "box":
-                hw = eq.get("width_mm", 0) / 2.0
-                hd = eq.get("depth_mm", 0) / 2.0
-                h = eq.get("height_mm", 0)
-                zmin, zmax = el, el + h
-            elif et == "vertical_vessel":
-                r = eq.get("diameter_mm", 0) / 2.0
-                hw, hd = r, r
-                h = eq.get("height_mm", 0)
-                zmin, zmax = el, el + h
-            elif et == "horizontal_vessel":
-                hl = eq.get("length_mm", 0) / 2.0
-                r = eq.get("diameter_mm", 0) / 2.0
-                rot = eq.get("rotation_deg", 0)
-                rad = math.radians(rot)
-                hw = abs(hl * math.cos(rad)) + abs(r * math.sin(rad))
-                hd = abs(hl * math.sin(rad)) + abs(r * math.cos(rad))
-                saddle_h = eq.get("saddle_height_mm",
-                                  round(r * 2 * 0.4))
-                zmin, zmax = el, el + saddle_h + r * 2
-            else:
-                hw = eq.get("width_mm", 1000) / 2.0
-                hd = eq.get("depth_mm", 1000) / 2.0
-                zmin, zmax = el, el + eq.get("height_mm", 2000)
-            return (cx - hw, cx + hw, cy - hd, cy + hd, zmin, zmax)
-        return None
+        """Retourne les bounds logiques complets (xmin, xmax, ymin, ymax, zmin, zmax) en mm."""
+        return self._bounds_by_tag.get(tag)
 
     def find_tag_at_point(self, x_m: float, y_m: float,
                           z_m: float = 0.0) -> str | None:
@@ -124,19 +143,17 @@ class SceneBuilder:
 
         nearest_tag = None
         nearest_dist = float("inf")
-        for eq in self.layout.get("equipment", []):
-            tag = eq.get("tag", "")
-            if not tag:
-                continue
-            b = self.get_equipment_bounds(tag)
-            if b is None:
-                continue
+
+        for tag, b in self._bounds_by_tag.items():
             xmin, xmax, ymin, ymax, _, _ = b
+
             if xmin <= x_mm <= xmax and ymin <= y_mm <= ymax:
                 return tag
+
             cx = (xmin + xmax) / 2.0
             cy = (ymin + ymax) / 2.0
             d = math.hypot(cx - x_mm, cy - y_mm)
+
             if d < nearest_dist:
                 nearest_dist = d
                 nearest_tag = tag
@@ -285,7 +302,7 @@ class SceneBuilder:
             direction=(0, 0, 1),
             radius=r,
             height=h,
-            resolution=32,
+            resolution=16,
             capping=True,
         )
         md = {
@@ -331,7 +348,7 @@ class SceneBuilder:
             direction=(dx, dy, 0),
             radius=r,
             height=length - dia,  # shell length between heads
-            resolution=32,
+            resolution=16,
             capping=True,
         )
         md = {
@@ -350,7 +367,7 @@ class SceneBuilder:
             hx = cx + sign * shell_half * dx
             hy = cy + sign * shell_half * dy
             head = pv.Sphere(radius=r, center=(hx, hy, vessel_cz),
-                             theta_resolution=16, phi_resolution=16)
+                             theta_resolution=12, phi_resolution=12)
             self.meshes.append({
                 "mesh": head,
                 "color": COLOR_HORIZ_VESSEL,
