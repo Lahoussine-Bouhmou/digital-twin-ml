@@ -134,7 +134,7 @@ class SceneBuilder:
         return self._bounds_by_tag.get(tag)
 
     def find_tag_at_point(self, x_m: float, y_m: float,
-                          z_m: float = 0.0) -> str | None:
+                        z_m: float = 0.0) -> str | None:
         """Return the equipment tag whose XY footprint contains the point,
         falling back to the closest footprint within 500 mm.
         """
@@ -142,7 +142,8 @@ class SceneBuilder:
         y_mm = y_m / self.scale
 
         nearest_tag = None
-        nearest_dist = float("inf")
+        nearest_dist_sq = float("inf")
+        pick_limit_sq = 500.0 * 500.0
 
         for tag, b in self._bounds_by_tag.items():
             xmin, xmax, ymin, ymax, _, _ = b
@@ -152,13 +153,15 @@ class SceneBuilder:
 
             cx = (xmin + xmax) / 2.0
             cy = (ymin + ymax) / 2.0
-            d = math.hypot(cx - x_mm, cy - y_mm)
+            dx = cx - x_mm
+            dy = cy - y_mm
+            dist_sq = dx * dx + dy * dy
 
-            if d < nearest_dist:
-                nearest_dist = d
+            if dist_sq < nearest_dist_sq:
+                nearest_dist_sq = dist_sq
                 nearest_tag = tag
 
-        if nearest_tag is not None and nearest_dist <= 500:
+        if nearest_tag is not None and nearest_dist_sq <= pick_limit_sq:
             return nearest_tag
         return None
 

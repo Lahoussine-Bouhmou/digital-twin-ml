@@ -364,6 +364,12 @@ class EquipmentTab(QWidget):
     def get_table_model(self) -> EquipmentTableModel:
         return self._model
 
+    def current_selected_tag(self) -> str:
+        idx = self._table.selectionModel().currentIndex()
+        if idx.isValid():
+            return self._model.tag_at_row(idx.row())
+        return ""
+
     def _on_row_changed(self, current: QModelIndex, _previous: QModelIndex):
         if self._suppress_emit:
             return
@@ -1673,7 +1679,8 @@ class MainWindow(QMainWindow):
         if total == 0:
             self._scene_layout_data = self._layout_data
             self._noise_preview_step = 0
-            self._rebuild_scene(reset_camera=False)
+            self._rebuild_equipment_groups()
+            self._plotter.render()
             self._edit_tab.set_noise_preview_state(0, 0)
             return
 
@@ -1689,13 +1696,15 @@ class MainWindow(QMainWindow):
 
         if step == 0:
             self._scene_layout_data = self._layout_data
-            self._rebuild_scene(reset_camera=False)
+            self._rebuild_equipment_groups()
+            self._plotter.render()
             self._edit_tab.set_noise_preview_state(0, total)
             self.statusBar().showMessage("Showing clean layout (step 0)")
             return
 
         self._scene_layout_data = self._noise_preview_layouts[step - 1]
-        self._rebuild_scene(reset_camera=False)
+        self._rebuild_equipment_groups()
+        self._plotter.render()
         self._edit_tab.set_noise_preview_state(step, total)
 
         meta = self._scene_layout_data.get("noise_metadata", {})
@@ -1819,7 +1828,7 @@ class MainWindow(QMainWindow):
         )
 
     def _rebuild_dimension_group(self):
-        """Rebuild uniquement les dimensions, sans refaire toute la scène."""
+        """Rebuild only dimensions, without touching the rest of the scene."""
         self._clear_actor_groups("dimension")
 
         if not self._show_dimensions:
@@ -1829,17 +1838,109 @@ class MainWindow(QMainWindow):
         if not scene_layout:
             return
 
-        dim_builder = SceneBuilder(scene_layout)
-        dim_meshes = [
-            md for md in dim_builder.build(show_dimensions=True)
-            if md.get("group") == "dimension"
-        ]
+        _builder_unused, dim_meshes = self._collect_group_meshes(
+            scene_layout,
+            show_dimensions=True,
+            groups={"dimension"},
+        )
         self._add_mesh_dicts(dim_meshes)
+    
+    def _collect_group_meshes(
+        self,
+        scene_layout: dict,
+        *,
+        show_dimensions: bool,
+        groups: set[str],
+    ):
+        """Build scene once, then keep only requested groups."""
+        builder = SceneBuilder(scene_layout)
+        mesh_dicts = builder.build(show_dimensions=show_dimensions)
+        filtered = [md for md in mesh_dicts if md.get("group") in groups]
+        return builder, filtered
+
+
+    def _add_highlight_for_tag(self, tag: str, render: bool = False):
+        """Add a highlight sphere for a selected equipment tag."""
+        if not hasattr(self, "_builder"):
+            return
+
+        center = self._builder.get_equipment_center(tag)
+        if not center:
+            return
+
+        import pyvista as pv
+
+        sphere = pv.Sphere(radius=0.4, center=center)
+        actor = self._plotter.add_mesh(
+            sphere,
+            color="#ffff00",
+            opacity=0.35,
+            show_edges=False,
+        )
+        self._highlight_actor = actor
+        if actor is not None:
+            self._scene_actors_by_group.setdefault("highlight", []).append(actor)
+
+        if render:
+            self._plotter.render()
+
+
+    def _restore_highlight_from_selection(self):
+        tag = self._equipment_tab.current_selected_tag()
+        if tag:
+            self._add_highlight_for_tag(tag, render=False)
+
+
+    def _rebuild_static_groups(self):
+        """Rebuild only static parts of the scene."""
+        self._clear_actor_groups("deck", "boundary", "grid", "dimension")
+
+        scene_layout = self._current_scene_layout()
+        if not scene_layout:
+            return
+
+        wanted = {"deck", "boundary", "grid"}
+        if self._show_dimensions:
+            wanted.add("dimension")
+
+        _builder_unused, mesh_dicts = self._collect_group_meshes(
+            scene_layout,
+            show_dimensions=self._show_dimensions,
+            groups=wanted,
+        )
+        self._add_mesh_dicts(mesh_dicts)
+
+
+    def _rebuild_equipment_groups(self):
+        """Rebuild only equipment + labels + measurement + highlight."""
+        self._clear_actor_groups(
+            "equipment",
+            "equipment_label",
+            "measurement",
+            "highlight",
+        )
+
+        scene_layout = self._current_scene_layout()
+        if not scene_layout:
+            return
+
+        builder, mesh_dicts = self._collect_group_meshes(
+            scene_layout,
+            show_dimensions=False,
+            groups={"equipment", "equipment_label"},
+        )
+        self._builder = builder
+        self._add_mesh_dicts(mesh_dicts)
+
+        if self._measurement_result is not None:
+            self._rebuild_measurement_group()
+
+        self._restore_highlight_from_selection()
 
     # -- Scene management ---------------------------------------------------
 
     def _rebuild_scene(self, reset_camera: bool = True):
-        """Clear and rebuild the 3D scene from layout data."""
+        """Clear and rebuild the full 3D scene from layout data."""
         self._clear_actor_groups(
             "deck",
             "boundary",
@@ -1856,14 +1957,8 @@ class MainWindow(QMainWindow):
             self._plotter.render()
             return
 
-        builder = SceneBuilder(scene_layout)
-        mesh_dicts = builder.build(show_dimensions=self._show_dimensions)
-        self._builder = builder
-
-        self._add_mesh_dicts(mesh_dicts)
-
-        if self._measurement_result is not None:
-            self._rebuild_measurement_group()
+        self._rebuild_static_groups()
+        self._rebuild_equipment_groups()
 
         if reset_camera or self._first_render:
             self._plotter.reset_camera()
@@ -1900,16 +1995,20 @@ class MainWindow(QMainWindow):
     # -- Edits / toggles ----------------------------------------------------
 
     def _on_equipment_edited(self):
-        """Sync table model edits back into layout data and rebuild scene."""
+        """Sync table edits back into layout data and rebuild only equipment."""
         if not self._layout_data:
             return
+
         if self._noise_preview_layouts:
             self._clear_noise_preview()
+
         self._layout_data["equipment"] = (
             self._equipment_tab.get_table_model().get_equipment_list()
         )
+
         self._edit_tab.set_layout_data(self._layout_data)
-        self._rebuild_scene(reset_camera=False)
+        self._rebuild_equipment_groups()
+        self._plotter.render()
         self._update_status_info()
         self.statusBar().showMessage("Scene updated from edit")
 
@@ -1917,13 +2016,18 @@ class MainWindow(QMainWindow):
         """Handle add / delete / rename / bulk moves from the Edit tab."""
         if not self._layout_data:
             return
+
         if self._noise_preview_layouts:
             self._clear_noise_preview()
+
         self._equipment_tab.set_equipment(
             self._layout_data.get("equipment", [])
         )
         self._edit_tab.set_layout_data(self._layout_data)
-        self._rebuild_scene(reset_camera=False)
+
+        self._rebuild_equipment_groups()
+        self._plotter.render()
+
         self._update_status_info()
         if tag and tag != "__all__":
             self.statusBar().showMessage("Updated: %s" % tag)
@@ -2026,17 +2130,7 @@ class MainWindow(QMainWindow):
             return
 
         self._clear_actor_groups("highlight")
-
-        import pyvista as pv
-        sphere = pv.Sphere(radius=0.4, center=center)
-        self._highlight_actor = self._plotter.add_mesh(
-            sphere,
-            color="#ffff00",
-            opacity=0.35,
-            show_edges=False,
-        )
-        if self._highlight_actor is not None:
-            self._scene_actors_by_group["highlight"].append(self._highlight_actor)
+        self._add_highlight_for_tag(tag, render=False)
 
         self._plotter.camera.focal_point = center
         self._plotter.render()
