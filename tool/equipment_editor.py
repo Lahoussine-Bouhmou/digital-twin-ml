@@ -92,6 +92,66 @@ def move_relative(eq: dict, dx_mm: float = 0, dy_mm: float = 0,
 
 
 # ---------------------------------------------------------------------------
+# Move for noise generation (added)
+# ---------------------------------------------------------------------------
+
+def clamp_equipment_inside_boundary(eq: dict, boundary: dict) -> None:
+    """
+    Shift equipment back inside the module boundary using its current
+    rotation-aware axis-aligned footprint.
+
+    If the equipment is larger than the module in one direction, it is
+    centered along that axis as a best-effort fallback.
+    """
+    if not boundary:
+        return
+
+    w = boundary.get("width_mm")
+    l = boundary.get("length_mm")
+    if not w or not l:
+        return
+
+    x0, x1, y0, y1 = _axis_aligned_footprint(eq)
+    span_x = x1 - x0
+    span_y = y1 - y0
+
+    dx = 0.0
+    dy = 0.0
+
+    if span_x > w:
+        eq["center_x_mm"] = int(round(w / 2.0))
+    else:
+        if x0 < 0:
+            dx = -x0
+        elif x1 > w:
+            dx = w - x1
+
+    if span_y > l:
+        eq["center_y_mm"] = int(round(l / 2.0))
+    else:
+        if y0 < 0:
+            dy = -y0
+        elif y1 > l:
+            dy = l - y1
+
+    if dx != 0 or dy != 0:
+        move_relative(eq, dx_mm=dx, dy_mm=dy)
+
+
+def apply_noise(eq: dict, dx_mm: float = 0, dy_mm: float = 0,
+                drot_deg: float = 0, boundary: dict | None = None) -> None:
+    """
+    Apply one geometric noise step to a single equipment dict.
+    """
+    if dx_mm != 0 or dy_mm != 0:
+        move_relative(eq, dx_mm=dx_mm, dy_mm=dy_mm)
+    if drot_deg != 0:
+        rotate_around_center(eq, drot_deg)
+    if boundary:
+        clamp_equipment_inside_boundary(eq, boundary)
+
+
+# ---------------------------------------------------------------------------
 # Rotate
 # ---------------------------------------------------------------------------
 

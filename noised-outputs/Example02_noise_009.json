@@ -1,0 +1,587 @@
+{
+  "coordinate_system": "origin bottom-left, X-right, Y-up",
+  "dimensions": [
+    {
+      "direction": "vertical",
+      "end_mm": 24150,
+      "from_ref": "boundary",
+      "perp_mm": -1400,
+      "start_mm": 0,
+      "to_ref": "boundary",
+      "value_mm": 24150
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 21986,
+      "from_ref": "boundary",
+      "perp_mm": 25727,
+      "start_mm": 0,
+      "to_ref": "boundary",
+      "value_mm": 22000
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 9810,
+      "from_ref": "boundary",
+      "perp_mm": 13727,
+      "start_mm": 0,
+      "to_ref": "WH-FP-5904_left",
+      "value_mm": 9810
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 24077,
+      "from_ref": "boundary",
+      "perp_mm": 17730,
+      "start_mm": 15900,
+      "to_ref": "boundary",
+      "value_mm": 8177
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 7540,
+      "from_ref": "boundary",
+      "perp_mm": 15327,
+      "start_mm": 0,
+      "to_ref": "WELLBAY-AREA_left",
+      "value_mm": 7540
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 5157,
+      "from_ref": "boundary",
+      "perp_mm": 9927,
+      "start_mm": 0,
+      "to_ref": "FIRE-WALL_left",
+      "value_mm": 5157
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 24081,
+      "from_ref": "boundary",
+      "perp_mm": 18777,
+      "start_mm": 19936,
+      "to_ref": "boundary",
+      "value_mm": 4145
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 3776,
+      "from_ref": "boundary",
+      "perp_mm": 16575,
+      "start_mm": -60,
+      "to_ref": "boundary",
+      "value_mm": 3836
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 3535,
+      "from_ref": "boundary",
+      "perp_mm": 4227,
+      "start_mm": 0,
+      "to_ref": "GAS-LIFT_center",
+      "value_mm": 3535
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 8865,
+      "from_ref": "WH-FP-5903_right",
+      "perp_mm": 2727,
+      "start_mm": 5775,
+      "to_ref": "WH-A-1201_left",
+      "value_mm": 3009
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 22000,
+      "from_ref": "WH-FP-3101_center",
+      "perp_mm": 14843,
+      "start_mm": 19200,
+      "to_ref": "boundary",
+      "value_mm": 2800
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 21980,
+      "from_ref": "WH-FP-3101_right",
+      "perp_mm": 16927,
+      "start_mm": 19800,
+      "to_ref": "boundary",
+      "value_mm": 2200
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 2200,
+      "from_ref": "boundary",
+      "perp_mm": 2727,
+      "start_mm": 0,
+      "to_ref": "WH-FP-5903_left",
+      "value_mm": 2180
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 24087,
+      "from_ref": "boundary",
+      "perp_mm": 2863,
+      "start_mm": 22100,
+      "to_ref": "boundary",
+      "value_mm": 1987
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 24090,
+      "from_ref": "boundary",
+      "perp_mm": 8775,
+      "start_mm": 22178,
+      "to_ref": "boundary",
+      "value_mm": 1920
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 1920,
+      "from_ref": "boundary",
+      "perp_mm": 6227,
+      "start_mm": 0,
+      "to_ref": "LAYDOW-AREA_left",
+      "value_mm": 1912
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 1850,
+      "from_ref": "boundary",
+      "perp_mm": 8727,
+      "start_mm": 0,
+      "to_ref": "LAYDOW-AREA_left",
+      "value_mm": 1860
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 2347,
+      "from_ref": "boundary",
+      "perp_mm": 14146,
+      "start_mm": 488,
+      "to_ref": "boundary",
+      "value_mm": 1850
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 1765,
+      "from_ref": "boundary",
+      "perp_mm": 16227,
+      "start_mm": 0,
+      "to_ref": "LAYDOW-AREA_left",
+      "value_mm": 1765
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 9450,
+      "from_ref": "boundary",
+      "perp_mm": 14825,
+      "start_mm": 8530,
+      "to_ref": "boundary",
+      "value_mm": 920
+    }
+  ],
+  "equipment": [
+    {
+      "center_x_mm": 11992,
+      "center_y_mm": 6412,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 4065,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 3.515,
+      "svg_shape": "rect",
+      "tag": "WH-TEC-1000",
+      "weight_kg": 1000,
+      "width_mm": 9980
+    },
+    {
+      "center_x_mm": 8754,
+      "center_y_mm": 1035,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 1440,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 6.954,
+      "svg_shape": "rect",
+      "tag": "WH-A-1201",
+      "weight_kg": 1000,
+      "width_mm": 5285
+    },
+    {
+      "center_x_mm": 5744,
+      "center_y_mm": 5329,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 480,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 16.229,
+      "svg_shape": "rect",
+      "tag": "WH-FP-5903",
+      "weight_kg": 1000,
+      "width_mm": 3575
+    },
+    {
+      "center_x_mm": 1667,
+      "center_y_mm": 5364,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 510,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 342.753,
+      "svg_shape": "rect",
+      "tag": "WH-FP-5902",
+      "weight_kg": 1000,
+      "width_mm": 1815
+    },
+    {
+      "center_x_mm": 6353,
+      "center_y_mm": 6755,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 1525,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 349.729,
+      "svg_shape": "rect",
+      "tag": "WH-FP-5901",
+      "weight_kg": 1000,
+      "width_mm": 4507
+    },
+    {
+      "center_x_mm": 6194,
+      "center_y_mm": 9604,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 480,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 342.98,
+      "svg_shape": "rect",
+      "tag": "GAS-LIFT",
+      "weight_kg": 1000,
+      "width_mm": 3227
+    },
+    {
+      "center_x_mm": 10558,
+      "center_y_mm": 8838,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 750,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 1.002,
+      "svg_shape": "rect",
+      "tag": "RISER-MULTIPHASE",
+      "weight_kg": 1000,
+      "width_mm": 9980
+    },
+    {
+      "center_x_mm": 10307,
+      "center_y_mm": 15629,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 1700,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 347.19,
+      "svg_shape": "rect",
+      "tag": "WH-FP-5904",
+      "weight_kg": 1000,
+      "width_mm": 2230
+    },
+    {
+      "center_x_mm": 3413,
+      "center_y_mm": 20795,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 6450,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 352.557,
+      "svg_shape": "rect",
+      "tag": "LAYDOW-AREA",
+      "weight_kg": 1000,
+      "width_mm": 2430
+    },
+    {
+      "center_x_mm": 18749,
+      "center_y_mm": 15423,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 1500,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 353.793,
+      "svg_shape": "rect",
+      "tag": "HATCH",
+      "weight_kg": 1000,
+      "width_mm": 1470
+    },
+    {
+      "center_x_mm": 20025,
+      "center_y_mm": 18324,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 3485,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 351.506,
+      "svg_shape": "rect",
+      "tag": "WH-FP-3101",
+      "weight_kg": 1000,
+      "width_mm": 1300
+    },
+    {
+      "center_x_mm": 13456,
+      "center_y_mm": 9359,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 480,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 358.496,
+      "svg_shape": "rect",
+      "tag": "FIRE-WALL",
+      "weight_kg": 1000,
+      "width_mm": 11805
+    },
+    {
+      "center_x_mm": 9715,
+      "center_y_mm": 17643,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 6950,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 11.078,
+      "svg_shape": "rect",
+      "tag": "WELLBAY-AREA",
+      "weight_kg": 1000,
+      "width_mm": 6000
+    }
+  ],
+  "grid_lines": {
+    "x_lines": [
+      {
+        "label": "1",
+        "position_mm": 0
+      },
+      {
+        "label": "2",
+        "position_mm": 22000
+      }
+    ],
+    "y_lines": [
+      {
+        "label": "A",
+        "position_mm": 0
+      },
+      {
+        "label": "B",
+        "position_mm": 24150
+      }
+    ]
+  },
+  "module_boundary": {
+    "length_mm": 24150,
+    "origin_x_mm": 0,
+    "origin_y_mm": 0,
+    "width_mm": 22000
+  },
+  "parser_warnings": [
+    "Dimension label '600' has no matching arrow (bootstrap scale 35.278 mm/pt); label skipped",
+    "No grid line labels found in SVG; generated from boundary"
+  ],
+  "scale_mm_per_pt": 35.2776,
+  "source": "C:/Users/eleve/Downloads/digital-twins-ml/forChat/Phase91_Layout_Viewer_updated/Example02.svg",
+  "units": "mm",
+  "noise_metadata": {
+    "generator": "progressive_layout_noise_v2",
+    "noise_mode": "diffusion",
+    "step_index": 9,
+    "num_examples": 20,
+    "alpha": 0.45,
+    "seed": 42,
+    "max_dx_mm": 3000.0,
+    "max_dy_mm": 3000.0,
+    "max_rot_deg": 20.0,
+    "clamp_to_boundary": true,
+    "num_out_of_bounds": 1,
+    "out_of_bounds_tags": [
+      "LAYDOW-AREA"
+    ],
+    "num_collisions": 8,
+    "collision_pairs": [
+      [
+        "WH-TEC-1000",
+        "WH-FP-5903"
+      ],
+      [
+        "WH-TEC-1000",
+        "WH-FP-5901"
+      ],
+      [
+        "WH-TEC-1000",
+        "RISER-MULTIPHASE"
+      ],
+      [
+        "WH-FP-5903",
+        "WH-FP-5901"
+      ],
+      [
+        "GAS-LIFT",
+        "RISER-MULTIPHASE"
+      ],
+      [
+        "GAS-LIFT",
+        "FIRE-WALL"
+      ],
+      [
+        "RISER-MULTIPHASE",
+        "FIRE-WALL"
+      ],
+      [
+        "WH-FP-5904",
+        "WELLBAY-AREA"
+      ]
+    ]
+  },
+  "noise_applied": {
+    "WH-TEC-1000": {
+      "dx_mm": 1.857891,
+      "dy_mm": 628.782468,
+      "rot_deg": 3.514794
+    },
+    "WH-A-1201": {
+      "dx_mm": -2752.854313,
+      "dy_mm": -1563.731654,
+      "rot_deg": 6.953617
+    },
+    "WH-FP-5903": {
+      "dx_mm": 1756.625736,
+      "dy_mm": 2569.256397,
+      "rot_deg": 16.228514
+    },
+    "WH-FP-5902": {
+      "dx_mm": -2774.974416,
+      "dy_mm": 1038.800863,
+      "rot_deg": -17.246612
+    },
+    "WH-FP-5901": {
+      "dx_mm": 2178.360984,
+      "dy_mm": 342.021694,
+      "rot_deg": -10.270519
+    },
+    "GAS-LIFT": {
+      "dx_mm": 2713.366279,
+      "dy_mm": 869.360675,
+      "rot_deg": -17.02034
+    },
+    "RISER-MULTIPHASE": {
+      "dx_mm": 396.181959,
+      "dy_mm": -987.038875,
+      "rot_deg": 1.001659
+    },
+    "WH-FP-5904": {
+      "dx_mm": -628.01273,
+      "dy_mm": 1854.216746,
+      "rot_deg": -12.809577
+    },
+    "LAYDOW-AREA": {
+      "dx_mm": 428.496977,
+      "dy_mm": 2449.15426,
+      "rot_deg": -7.442643
+    },
+    "HATCH": {
+      "dx_mm": 284.375713,
+      "dy_mm": 272.702215,
+      "rot_deg": -6.20732
+    },
+    "WH-FP-3101": {
+      "dx_mm": 874.656391,
+      "dy_mm": 131.01788,
+      "rot_deg": -8.493908
+    },
+    "FIRE-WALL": {
+      "dx_mm": 2378.721742,
+      "dy_mm": 1068.680245,
+      "rot_deg": -1.503963
+    },
+    "WELLBAY-AREA": {
+      "dx_mm": -859.510936,
+      "dy_mm": -1058.88954,
+      "rot_deg": 11.078469
+    }
+  }
+}

@@ -1,0 +1,317 @@
+{
+  "coordinate_system": "origin bottom-left, X-right, Y-up",
+  "dimensions": [
+    {
+      "direction": "horizontal",
+      "end_mm": 25000,
+      "from_ref": "boundary",
+      "perp_mm": 22620,
+      "start_mm": 0,
+      "to_ref": "boundary",
+      "value_mm": 25000
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 21550,
+      "from_ref": "boundary",
+      "perp_mm": -1000,
+      "start_mm": 0,
+      "to_ref": "boundary",
+      "value_mm": 21550
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 16620,
+      "from_ref": "boundary",
+      "perp_mm": 20500,
+      "start_mm": 9143,
+      "to_ref": "boundary",
+      "value_mm": 7477
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 9180,
+      "from_ref": "boundary",
+      "perp_mm": 20500,
+      "start_mm": 2180,
+      "to_ref": "boundary",
+      "value_mm": 7000
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 21550,
+      "from_ref": "boundary",
+      "perp_mm": 20500,
+      "start_mm": 16636,
+      "to_ref": "boundary",
+      "value_mm": 4914
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 8544,
+      "from_ref": "boundary",
+      "perp_mm": 2600,
+      "start_mm": 4520,
+      "to_ref": "boundary",
+      "value_mm": 4024
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 3648,
+      "from_ref": "boundary",
+      "perp_mm": 16339,
+      "start_mm": 0,
+      "to_ref": "K-3170-A_left",
+      "value_mm": 3648
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 3648,
+      "from_ref": "boundary",
+      "perp_mm": 11854,
+      "start_mm": 0,
+      "to_ref": "K-3170-A_left",
+      "value_mm": 3648
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 3648,
+      "from_ref": "boundary",
+      "perp_mm": 1120,
+      "start_mm": 0,
+      "to_ref": "K-3170-A_left",
+      "value_mm": 3648
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 24950,
+      "from_ref": "VZ-3170-A_center",
+      "perp_mm": 19020,
+      "start_mm": 22567,
+      "to_ref": "boundary",
+      "value_mm": 2383
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 24983,
+      "from_ref": "VZ-3170-A_center",
+      "perp_mm": 11520,
+      "start_mm": 22600,
+      "to_ref": "boundary",
+      "value_mm": 2383
+    },
+    {
+      "direction": "horizontal",
+      "end_mm": 24983,
+      "from_ref": "VZ-3170-A_center",
+      "perp_mm": 3720,
+      "start_mm": 22600,
+      "to_ref": "boundary",
+      "value_mm": 2383
+    },
+    {
+      "direction": "vertical",
+      "end_mm": 21599,
+      "from_ref": "boundary",
+      "perp_mm": 4300,
+      "start_mm": 19985,
+      "to_ref": "boundary",
+      "value_mm": 1614
+    }
+  ],
+  "equipment": [
+    {
+      "center_x_mm": 10774,
+      "center_y_mm": 17436,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 4000,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 2.542,
+      "svg_shape": "rect",
+      "tag": "K-3170-C",
+      "weight_kg": 1000,
+      "width_mm": 13650
+    },
+    {
+      "center_x_mm": 10024,
+      "center_y_mm": 10431,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 4000,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 359.118,
+      "svg_shape": "rect",
+      "tag": "K-3170-B",
+      "weight_kg": 1000,
+      "width_mm": 13650
+    },
+    {
+      "center_x_mm": 10526,
+      "center_y_mm": 3338,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "depth_mm": 4000,
+      "elevation_mm": 0,
+      "equipment_type": "box",
+      "height_mm": 2000,
+      "rotation_deg": 1.915,
+      "svg_shape": "rect",
+      "tag": "K-3170-A",
+      "weight_kg": 1000,
+      "width_mm": 13650
+    },
+    {
+      "center_x_mm": 22682,
+      "center_y_mm": 16937,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "diameter_mm": 2050,
+      "elevation_mm": 0,
+      "equipment_type": "vertical_vessel",
+      "height_mm": 2000,
+      "rotation_deg": 1.435,
+      "svg_shape": "ellipse",
+      "tag": "VZ-3170-C",
+      "weight_kg": 1000
+    },
+    {
+      "center_x_mm": 22243,
+      "center_y_mm": 8797,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "diameter_mm": 2050,
+      "elevation_mm": 0,
+      "equipment_type": "vertical_vessel",
+      "height_mm": 2000,
+      "rotation_deg": 358.59,
+      "svg_shape": "ellipse",
+      "tag": "VZ-3170-B",
+      "weight_kg": 1000
+    },
+    {
+      "center_x_mm": 22750,
+      "center_y_mm": 2032,
+      "data_source": "svg_geometry",
+      "defaults_applied": [
+        "height_mm",
+        "weight_kg",
+        "elevation_mm"
+      ],
+      "diameter_mm": 2050,
+      "elevation_mm": 0,
+      "equipment_type": "vertical_vessel",
+      "height_mm": 2000,
+      "rotation_deg": 7.007,
+      "svg_shape": "ellipse",
+      "tag": "VZ-3170-A",
+      "weight_kg": 1000
+    }
+  ],
+  "grid_lines": {
+    "x_lines": [
+      {
+        "label": "1",
+        "position_mm": 0
+      },
+      {
+        "label": "2",
+        "position_mm": 25000
+      }
+    ],
+    "y_lines": [
+      {
+        "label": "A",
+        "position_mm": 0
+      },
+      {
+        "label": "B",
+        "position_mm": 21550
+      }
+    ]
+  },
+  "module_boundary": {
+    "length_mm": 21550,
+    "origin_x_mm": 0,
+    "origin_y_mm": 0,
+    "width_mm": 25000
+  },
+  "parser_warnings": [
+    "No grid line labels found in SVG; generated from boundary"
+  ],
+  "scale_mm_per_pt": 35.2778,
+  "source": "C:/Users/eleve/Downloads/digital-twins-ml/forChat/Phase91_Layout_Viewer_updated/Example01.svg",
+  "units": "mm",
+  "noise_metadata": {
+    "generator": "progressive_layout_noise_v2",
+    "noise_mode": "diffusion",
+    "step_index": 3,
+    "num_examples": 20,
+    "alpha": 0.15,
+    "seed": 42,
+    "max_dx_mm": 3000.0,
+    "max_dy_mm": 3000.0,
+    "max_rot_deg": 20.0,
+    "clamp_to_boundary": true,
+    "num_out_of_bounds": 0,
+    "out_of_bounds_tags": [],
+    "num_collisions": 0,
+    "collision_pairs": []
+  },
+  "noise_applied": {
+    "K-3170-C": {
+      "dx_mm": 298.919655,
+      "dy_mm": -548.583634,
+      "rot_deg": 2.542084
+    },
+    "K-3170-B": {
+      "dx_mm": -450.991271,
+      "dy_mm": -38.809731,
+      "rot_deg": -0.881699
+    },
+    "K-3170-A": {
+      "dx_mm": 51.488936,
+      "dy_mm": 368.38634,
+      "rot_deg": 1.915241
+    },
+    "VZ-3170-C": {
+      "dx_mm": 157.448296,
+      "dy_mm": 292.476644,
+      "rot_deg": 1.435476
+    },
+    "VZ-3170-B": {
+      "dx_mm": -282.143459,
+      "dy_mm": -322.816992,
+      "rot_deg": -1.409905
+    },
+    "VZ-3170-A": {
+      "dx_mm": 224.69688,
+      "dy_mm": -112.552007,
+      "rot_deg": 7.007263
+    }
+  }
+}

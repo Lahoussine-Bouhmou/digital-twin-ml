@@ -19,6 +19,7 @@ from PySide6.QtGui import QAction, QBrush, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QButtonGroup,
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -37,18 +38,22 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
+    QScrollArea,
+    QSpinBox,
     QSplitter,
     QTabWidget,
     QTableView,
     QToolBar,
     QVBoxLayout,
     QWidget,
+    QSlider,
 )
 import pyvistaqt
 
 import equipment_editor
 from measurement_engine import MeasurementEngine
 from scene_builder import SceneBuilder
+import noise_generator
 
 log = logging.getLogger(__name__)
 
@@ -666,6 +671,13 @@ def _spin(minv: float, maxv: float, default: float) -> QDoubleSpinBox:
     sp.setSingleStep(100.0)
     return sp
 
+# Added
+def _int_spin(minv: int, maxv: int, default: int) -> QSpinBox:
+    sp = QSpinBox()
+    sp.setRange(int(minv), int(maxv))
+    sp.setValue(int(default))
+    sp.setSingleStep(1)
+    return sp
 
 # ---------------------------------------------------------------------------
 # Edit tab
@@ -674,6 +686,9 @@ class EditTab(QWidget):
     """Add / delete / move / rotate / align equipment."""
 
     equipment_modified = Signal(str)  # tag or "__all__"
+    noise_generation_requested = Signal(dict)
+    noise_preview_requested = Signal(str)   # "prev", "next", "clean"
+    noise_preview_index_requested = Signal(int)  # 0-based index
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -705,7 +720,18 @@ class EditTab(QWidget):
     # ---- UI --------------------------------------------------------------
 
     def _build_ui(self):
-        outer = QVBoxLayout(self)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        root.addWidget(scroll)
+
+        container = QWidget()
+        scroll.setWidget(container)
+
+        outer = QVBoxLayout(container)
         outer.setContentsMargins(10, 10, 10, 10)
         outer.setSpacing(8)
 
@@ -872,8 +898,151 @@ class EditTab(QWidget):
         act_row.addWidget(self._btn_duplicate)
         outer.addLayout(act_row)
 
+        # --- Progressive noise dataset (added)
+        self._noise_box = QFrame()
+        self._noise_box.setFrameShape(QFrame.Shape.StyledPanel)
+        nl = QVBoxLayout(self._noise_box)
+        nl.setContentsMargins(8, 8, 8, 8)
+        nl.addWidget(QLabel("Progressive Noise Dataset"))
+
+        row1 = QHBoxLayout()
+        row1.addWidget(QLabel("Examples:"))
+        self._noise_count = _int_spin(1, 10000, 20)
+        row1.addWidget(self._noise_count)
+
+        row1.addWidget(QLabel("Mode:"))
+        self._noise_mode = QComboBox()
+        self._noise_mode.addItem("Diffusion-like", "diffusion")        
+        self._noise_mode.addItem("Linear", "linear")
+        row1.addWidget(self._noise_mode)
+
+        row1.addStretch()
+        nl.addLayout(row1)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(QLabel("Max dX (mm):"))
+        self._noise_dx = _spin(0, 1e6, 3000)
+        row2.addWidget(self._noise_dx)
+        row2.addWidget(QLabel("Max dY (mm):"))
+        self._noise_dy = _spin(0, 1e6, 3000)
+        row2.addWidget(self._noise_dy)
+        nl.addLayout(row2)
+
+        row3 = QHBoxLayout()
+        row3.addWidget(QLabel("Max rot (deg):"))
+        self._noise_rot = _spin(0, 3600, 20)
+        row3.addWidget(self._noise_rot)
+        row3.addWidget(QLabel("Seed:"))
+        self._noise_seed = _int_spin(-1, 999999999, 42)
+        self._noise_seed.setToolTip("-1 = random seed")
+        row3.addWidget(self._noise_seed)
+        nl.addLayout(row3)
+
+        row4 = QHBoxLayout()
+        self._noise_clamp = QCheckBox("Clamp equipment inside module boundary")
+        self._noise_clamp.setChecked(True)
+        row4.addWidget(self._noise_clamp)
+        row4.addStretch()
+        nl.addLayout(row4)
+
+        self._noise_mode_help = QLabel()
+        self._noise_mode_help.setWordWrap(True)
+        self._noise_mode_help.setStyleSheet("color: #999; font-size: 11px;")
+        nl.addWidget(self._noise_mode_help)
+
+        self._noise_mode.currentIndexChanged.connect(
+            self._update_noise_mode_help
+        )        
+
+        info = QLabel(
+            "Generate noisy layouts from the current clean layout."
+        )
+        info.setStyleSheet("color: #999; font-size: 11px;")
+        info.setWordWrap(True)
+        nl.addWidget(info)
+
+        self._btn_generate_noise = QPushButton("Generate noisy dataset...")
+        self._btn_generate_noise.clicked.connect(
+            self._on_generate_noise_clicked
+        )
+        nl.addWidget(self._btn_generate_noise)
+
+        outer.addWidget(self._noise_box)
+
+        # --- Noise preview navigation (added)
+        self._noise_preview_box = QFrame()
+        self._noise_preview_box.setFrameShape(QFrame.Shape.StyledPanel)
+        npl = QVBoxLayout(self._noise_preview_box)
+        npl.setContentsMargins(8, 8, 8, 8)
+
+        npl.addWidget(QLabel("Noise Preview"))
+
+        self._lbl_noise_preview = QLabel("No noisy layouts generated yet.")
+        self._lbl_noise_preview.setWordWrap(True)
+        self._lbl_noise_preview.setStyleSheet(
+            "font-size: 11px; color: #cdd6f4;"
+        )
+        npl.addWidget(self._lbl_noise_preview)
+
+        jump_row = QHBoxLayout()
+        jump_row.addWidget(QLabel("Step:"))
+
+        self._noise_step_spin = QSpinBox()
+        self._noise_step_spin.setRange(1, 1)
+        self._noise_step_spin.setEnabled(False)
+        self._noise_step_spin.setKeyboardTracking(False)
+        jump_row.addWidget(self._noise_step_spin)
+
+
+        jump_row.addWidget(QLabel("/"))
+        self._noise_step_total = QLabel("0")
+        jump_row.addWidget(self._noise_step_total)
+
+        jump_row.addStretch()
+        npl.addLayout(jump_row)
+
+        self._noise_step_slider = QSlider(Qt.Orientation.Horizontal)
+        self._noise_step_slider.setRange(1, 1)
+        self._noise_step_slider.setEnabled(False)
+        self._noise_step_slider.setTracking(False)
+        npl.addWidget(self._noise_step_slider)
+
+        self._noise_step_slider.valueChanged.connect(
+            self._on_noise_step_slider_changed
+        )
+        self._noise_step_spin.valueChanged.connect(
+            self._on_noise_step_spin_changed
+        )
+
+
+        nav_row = QHBoxLayout()
+        self._btn_noise_prev = QPushButton("← Previous")
+        self._btn_noise_prev.clicked.connect(
+            lambda: self.noise_preview_requested.emit("prev")
+        )
+        nav_row.addWidget(self._btn_noise_prev)
+
+        self._btn_noise_next = QPushButton("Next →")
+        self._btn_noise_next.clicked.connect(
+            lambda: self.noise_preview_requested.emit("next")
+        )
+        nav_row.addWidget(self._btn_noise_next)
+
+        npl.addLayout(nav_row)
+
+        note = QLabel(
+            "Preview only affects the right 3D view. "
+            "The editable clean layout is kept unchanged."
+        )
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #999; font-size: 11px;")
+        npl.addWidget(note)
+
+        outer.addWidget(self._noise_preview_box)
+
         # --- Validation
-        val = QFrame()
+        self._validation_box = QFrame()
+        val = self._validation_box
         val.setFrameShape(QFrame.Shape.StyledPanel)
         vl = QVBoxLayout(val)
         vl.setContentsMargins(8, 8, 8, 8)
@@ -885,7 +1054,12 @@ class EditTab(QWidget):
             vl.addWidget(lbl)
         outer.addWidget(val)
 
+        self._update_noise_mode_help()
+        self.set_noise_preview_state(0, 0)
         outer.addStretch()
+
+        if hasattr(self, "_validation_box"):
+            self._validation_box.hide()
 
     # ---- helpers ---------------------------------------------------------
 
@@ -962,7 +1136,11 @@ class EditTab(QWidget):
                 if idx >= 0:
                     self._align_ref.setCurrentIndex(idx)
 
-        self._refresh_validation()
+        #self._refresh_validation()
+
+        # added
+        has_layout = self._layout_data is not None and bool(self._equipment_list())
+        self._noise_box.setEnabled(has_layout)
 
     # ---- Move-field synchronization -------------------------------------
 
@@ -1007,6 +1185,131 @@ class EditTab(QWidget):
 
     def _reset_move_fields(self):
         self._sync_move_fields()
+
+    # added many
+    def _on_generate_noise_clicked(self):
+        if not self._layout_data or not self._equipment_list():
+            return
+
+        seed_value = self._noise_seed.value()
+        params = {
+            "num_examples": int(self._noise_count.value()),
+            "max_dx_mm": float(self._noise_dx.value()),
+            "max_dy_mm": float(self._noise_dy.value()),
+            "max_rot_deg": float(self._noise_rot.value()),
+            "seed": None if seed_value < 0 else int(seed_value),
+            "clamp_to_boundary": self._noise_clamp.isChecked(),
+            "noise_mode": str(self._noise_mode.currentData() or "linear"),
+        }
+        self.noise_generation_requested.emit(params)
+
+    def set_noise_preview_state(
+        self,
+        current_step: int,
+        total_noisy: int,
+    ):
+        """
+        current_step:
+            0 = clean layout
+            1..total_noisy = noisy step number
+
+        total_noisy:
+            number of noisy layouts available
+        """
+        total_steps = total_noisy  # noisy steps count
+        has_any = total_noisy > 0
+
+        if not has_any:
+            self._lbl_noise_preview.setText("No noisy layouts generated yet.")
+            self._btn_noise_prev.setEnabled(False)
+            self._btn_noise_next.setEnabled(False)
+
+            self._noise_step_slider.blockSignals(True)
+            self._noise_step_slider.setRange(0, 0)
+            self._noise_step_slider.setValue(0)
+            self._noise_step_slider.setEnabled(False)
+            self._noise_step_slider.blockSignals(False)
+
+            self._noise_step_spin.blockSignals(True)
+            self._noise_step_spin.setRange(0, 0)
+            self._noise_step_spin.setValue(0)
+            self._noise_step_spin.setEnabled(False)
+            self._noise_step_spin.blockSignals(False)
+
+            self._noise_step_total.setText("0")
+            return
+
+        self._noise_step_total.setText(str(total_steps))
+
+        self._noise_step_slider.blockSignals(True)
+        self._noise_step_slider.setRange(0, total_steps)
+        self._noise_step_slider.setValue(current_step)
+        self._noise_step_slider.setEnabled(True)
+        self._noise_step_slider.blockSignals(False)
+
+        self._noise_step_spin.blockSignals(True)
+        self._noise_step_spin.setRange(0, total_steps)
+        self._noise_step_spin.setValue(current_step)
+        self._noise_step_spin.setEnabled(True)
+        self._noise_step_spin.blockSignals(False)
+
+        if current_step == 0:
+            self._lbl_noise_preview.setText(
+                "Showing clean layout (step 0 / %d)" % total_steps
+            )
+        else:
+            self._lbl_noise_preview.setText(
+                "Showing noisy step %d / %d" % (current_step, total_steps)
+            )
+
+        self._btn_noise_prev.setEnabled(current_step > 0)
+        self._btn_noise_next.setEnabled(current_step < total_steps)
+
+    def _update_noise_mode_help(self):
+        mode = self._noise_mode.currentData()
+
+        if mode == "diffusion":
+            txt = (
+                "Diffusion-like: each step samples fresh Gaussian noise. "
+                "Noise amplitude increases with t."
+            )
+        else:
+            txt = (
+                "Linear: each equipment gets one target perturbation, "
+                "then the perturbation is scaled progressively with t."
+            )
+
+        self._noise_mode_help.setText(txt)
+
+    def _on_noise_step_slider_changed(self, value: int):
+        if hasattr(self, "_noise_step_spin"):
+            if self._noise_step_spin.value() != value:
+                self._noise_step_spin.blockSignals(True)
+                self._noise_step_spin.setValue(value)
+                self._noise_step_spin.blockSignals(False)
+
+        if self._noise_step_slider.isEnabled():
+            self.noise_preview_index_requested.emit(value)
+
+    def _emit_noise_step_jump_from_slider(self):
+        if not hasattr(self, "_noise_step_slider"):
+            return
+        if not self._noise_step_slider.isEnabled():
+            return
+        self.noise_preview_index_requested.emit(
+            self._noise_step_slider.value()
+        )
+
+    def _on_noise_step_spin_changed(self, value: int):
+        if hasattr(self, "_noise_step_slider"):
+            if self._noise_step_slider.value() != value:
+                self._noise_step_slider.blockSignals(True)
+                self._noise_step_slider.setValue(value)
+                self._noise_step_slider.blockSignals(False)
+
+        if self._noise_step_spin.isEnabled():
+            self.noise_preview_index_requested.emit(value)
+
 
     def _refresh_validation(self):
         if not self._layout_data:
@@ -1194,6 +1497,11 @@ class MainWindow(QMainWindow):
         self._highlight_actor: Any = None
         self._first_render = True
         self._show_dimensions = True
+        # added
+        self._scene_layout_data: dict | None = None
+        self._noise_preview_layouts: list[dict] = []
+        self._noise_preview_step: int = 0
+
         self.setWindowTitle("Layout Viewer 3D  -  SeaTec3D")
         self.resize(1500, 900)
         self._setup_ui()
@@ -1221,9 +1529,18 @@ class MainWindow(QMainWindow):
         self._equipment_tab.equipment_changed.connect(self._on_equipment_edited)
         self._tab_widget.addTab(self._equipment_tab, "Equipment")
 
-        # Edit tab (between Equipment and Measure)
+        # Edit tab (between Equipment and Measure) (added)
         self._edit_tab = EditTab()
         self._edit_tab.equipment_modified.connect(self._on_equipment_modified)
+        self._edit_tab.noise_generation_requested.connect(
+            self._on_generate_noise_sequence
+        )
+        self._edit_tab.noise_preview_requested.connect(
+            self._on_noise_preview_requested
+        )
+        self._edit_tab.noise_preview_index_requested.connect(
+            self._on_noise_preview_index_requested
+        )        
         self._tab_widget.addTab(self._edit_tab, "Edit")
 
         # Measure tab
@@ -1328,9 +1645,86 @@ class MainWindow(QMainWindow):
         n = len(layout_data.get("equipment", []))
         self.statusBar().showMessage("Loaded %d equipment items" % n)
 
+    # added 6
+    def _current_scene_layout(self) -> dict | None:
+        return self._scene_layout_data or self._layout_data
+
+    def _clear_noise_preview(self):
+        self._noise_preview_layouts = []
+        self._noise_preview_step = 0
+        self._scene_layout_data = self._layout_data
+        self._edit_tab.set_noise_preview_state(0, 0)
+
+    def _show_preview_step(self, step: int):
+        """
+        step:
+            0 = clean layout
+            1..N = noisy layouts
+        """
+        total = len(self._noise_preview_layouts)
+        if total == 0:
+            self._scene_layout_data = self._layout_data
+            self._noise_preview_step = 0
+            self._rebuild_scene(reset_camera=False)
+            self._edit_tab.set_noise_preview_state(0, 0)
+            return
+
+        step = max(0, min(step, total))
+
+        if step == self._noise_preview_step:
+            if step == 0 and self._scene_layout_data is self._layout_data:
+                return
+            if step > 0 and self._scene_layout_data is self._noise_preview_layouts[step - 1]:
+                return
+
+        self._noise_preview_step = step
+
+        if step == 0:
+            self._scene_layout_data = self._layout_data
+            self._rebuild_scene(reset_camera=False)
+            self._edit_tab.set_noise_preview_state(0, total)
+            self.statusBar().showMessage("Showing clean layout (step 0)")
+            return
+
+        self._scene_layout_data = self._noise_preview_layouts[step - 1]
+        self._rebuild_scene(reset_camera=False)
+        self._edit_tab.set_noise_preview_state(step, total)
+
+        meta = self._scene_layout_data.get("noise_metadata", {})
+        alpha = meta.get("alpha")
+        if alpha is None:
+            self.statusBar().showMessage(
+                "Showing noisy step %d / %d" % (step, total)
+            )
+        else:
+            self.statusBar().showMessage(
+                "Showing noisy step %d / %d  (alpha=%.3f)"
+                % (step, total, float(alpha))
+            )
+
+    def _on_noise_preview_requested(self, action: str):
+        if not self._noise_preview_layouts:
+            return
+
+        if action == "next":
+            self._show_preview_step(self._noise_preview_step + 1)
+        elif action == "prev":
+            self._show_preview_step(self._noise_preview_step - 1)
+
+    def _on_noise_preview_index_requested(self, step: int):
+        if not self._noise_preview_layouts:
+            return
+        self._show_preview_step(step)
+
     def _apply_layout_data(self, layout_data: dict):
         """Shared refresh path for SVG loads and project loads."""
+        #added
         self._layout_data = layout_data
+        self._scene_layout_data = layout_data
+        self._noise_preview_layouts = []
+        self._noise_preview_step = 0
+        self._edit_tab.set_noise_preview_state(0, 0)
+
         self._measure_engine = MeasurementEngine(
             layout_data.get("module_boundary")
         )
@@ -1361,11 +1755,12 @@ class MainWindow(QMainWindow):
         self._measurement_actors.clear()
         self._highlight_actor = None
 
-        if not self._layout_data:
+        scene_layout = self._current_scene_layout()
+        if not scene_layout:
             self._plotter.render()
             return
 
-        builder = SceneBuilder(self._layout_data)
+        builder = SceneBuilder(scene_layout)
         mesh_dicts = builder.build(show_dimensions=self._show_dimensions)
         self._builder = builder
 
@@ -1418,6 +1813,8 @@ class MainWindow(QMainWindow):
         """Sync table model edits back into layout data and rebuild scene."""
         if not self._layout_data:
             return
+        if self._noise_preview_layouts:
+            self._clear_noise_preview()
         self._layout_data["equipment"] = (
             self._equipment_tab.get_table_model().get_equipment_list()
         )
@@ -1430,6 +1827,8 @@ class MainWindow(QMainWindow):
         """Handle add / delete / rename / bulk moves from the Edit tab."""
         if not self._layout_data:
             return
+        if self._noise_preview_layouts:
+            self._clear_noise_preview()
         self._equipment_tab.set_equipment(
             self._layout_data.get("equipment", [])
         )
@@ -1473,8 +1872,9 @@ class MainWindow(QMainWindow):
             self._equipment_tab.select_row_by_tag(tag)
             self._edit_tab.select_tag(tag)
             if measure_active:
+                scene_layout = self._current_scene_layout() or {}
                 eq = next(
-                    (e for e in self._layout_data.get("equipment", [])
+                    (e for e in scene_layout.get("equipment", [])
                      if e.get("tag") == tag),
                     None,
                 )
@@ -1587,6 +1987,76 @@ class MainWindow(QMainWindow):
         self._plotter.reset_camera()
 
     # -- Export -------------------------------------------------------------
+
+    # added 2 methods
+    def _suggest_noise_export_stem(self) -> str:
+        svg_path = getattr(self._import_tab, "_svg_path", None)
+        if svg_path:
+            return Path(svg_path).stem.replace(" ", "_")
+        if self._project_path:
+            return Path(self._project_path).stem.replace(" ", "_")
+        return "layout"
+
+    def _on_generate_noise_sequence(self, params: dict):
+        import noise_generator
+
+        if not self._layout_data:
+            self.statusBar().showMessage("Nothing loaded")
+            return
+
+        self._sync_edits_to_layout()
+
+        out_dir = QFileDialog.getExistingDirectory(
+            self,
+            "Select output folder for noisy layouts",
+            "",
+        )
+        if not out_dir:
+            return
+
+        try:
+            layouts = noise_generator.generate_progressive_noisy_layouts(
+                layout_data=self._layout_data,
+                num_examples=int(params["num_examples"]),
+                max_dx_mm=float(params["max_dx_mm"]),
+                max_dy_mm=float(params["max_dy_mm"]),
+                max_rot_deg=float(params["max_rot_deg"]),
+                seed=params.get("seed"),
+                clamp_to_boundary=bool(
+                    params.get("clamp_to_boundary", True)
+                ),
+                noise_mode=str(params.get("noise_mode", "linear")),
+            )
+
+            written = noise_generator.save_noisy_layouts(
+                layouts=layouts,
+                output_dir=out_dir,
+                base_name=self._suggest_noise_export_stem(),
+            )
+
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "Noise generation error",
+                str(exc),
+            )
+            return
+
+        self._noise_preview_layouts = layouts
+        self._noise_preview_step = 0
+
+        if self._noise_preview_layouts:
+            self._show_preview_step(1)
+        else:
+            self._edit_tab.set_noise_preview_state(0, 0)
+
+        QMessageBox.information(
+            self,
+            "Noise generation complete",
+            "Generated %d noisy layouts in:\n%s\n\n"
+            "The first noisy example is now shown in the 3D viewer."
+            % (len(written), out_dir),
+        )
 
     def _sync_edits_to_layout(self):
         """Ensure in-flight table edits are reflected in self._layout_data."""
