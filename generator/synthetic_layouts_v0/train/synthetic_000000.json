@@ -1,0 +1,124 @@
+{
+  "source_dataset": "synthetic_v0_rules_based",
+  "generator_version": "v0_strong",
+  "template_name": "compact_module",
+  "module_boundary": {
+    "width_mm": 18204,
+    "length_mm": 22074
+  },
+  "equipment": [
+    {
+      "tag": "LPU-001",
+      "type_name": "LPU",
+      "category": "large_process",
+      "center_x_mm": 5903,
+      "center_y_mm": 5936,
+      "width_mm": 5458,
+      "length_mm": 3438,
+      "height_mm": 2131,
+      "rotation_deg": 90.0
+    },
+    {
+      "tag": "LPU-002",
+      "type_name": "LPU",
+      "category": "large_process",
+      "center_x_mm": 14333,
+      "center_y_mm": 15183,
+      "width_mm": 5317,
+      "length_mm": 4427,
+      "height_mm": 2911,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "UTL-001",
+      "type_name": "UTL",
+      "category": "utility",
+      "center_x_mm": 2228,
+      "center_y_mm": 18113,
+      "width_mm": 2732,
+      "length_mm": 1656,
+      "height_mm": 1848,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "VES-001",
+      "type_name": "VES",
+      "category": "vessel",
+      "center_x_mm": 12326,
+      "center_y_mm": 6307,
+      "width_mm": 2356,
+      "length_mm": 2487,
+      "height_mm": 3809,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "HAZ-001",
+      "type_name": "HAZ",
+      "category": "hazardous",
+      "center_x_mm": 2528,
+      "center_y_mm": 3782,
+      "width_mm": 2258,
+      "length_mm": 1641,
+      "height_mm": 2836,
+      "rotation_deg": 90.0
+    },
+    {
+      "tag": "CTL-001",
+      "type_name": "CTL",
+      "category": "control",
+      "center_x_mm": 6063,
+      "center_y_mm": 15860,
+      "width_mm": 1939,
+      "length_mm": 1567,
+      "height_mm": 2109,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "SRV-001",
+      "type_name": "SRV",
+      "category": "service",
+      "center_x_mm": 16390,
+      "center_y_mm": 8763,
+      "width_mm": 2126,
+      "length_mm": 1075,
+      "height_mm": 1965,
+      "rotation_deg": 90.0
+    },
+    {
+      "tag": "SRV-002",
+      "type_name": "SRV",
+      "category": "service",
+      "center_x_mm": 13441,
+      "center_y_mm": 2559,
+      "width_mm": 1827,
+      "length_mm": 2053,
+      "height_mm": 2344,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "SRV-003",
+      "type_name": "SRV",
+      "category": "service",
+      "center_x_mm": 16150,
+      "center_y_mm": 3487,
+      "width_mm": 1904,
+      "length_mm": 1707,
+      "height_mm": 2101,
+      "rotation_deg": 90.0
+    }
+  ],
+  "reserved_corridors": [
+    {
+      "x_min_mm": 0,
+      "y_min_mm": 10137,
+      "x_max_mm": 18204,
+      "y_max_mm": 11937
+    },
+    {
+      "x_min_mm": 8202,
+      "y_min_mm": 0,
+      "x_max_mm": 10002,
+      "y_max_mm": 22074
+    }
+  ]
+}

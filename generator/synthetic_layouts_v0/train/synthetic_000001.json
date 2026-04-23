@@ -1,0 +1,179 @@
+{
+  "source_dataset": "synthetic_v0_rules_based",
+  "generator_version": "v0_strong",
+  "template_name": "medium_process_module",
+  "module_boundary": {
+    "width_mm": 28742,
+    "length_mm": 27475
+  },
+  "equipment": [
+    {
+      "tag": "LPU-001",
+      "type_name": "LPU",
+      "category": "large_process",
+      "center_x_mm": 7150,
+      "center_y_mm": 6838,
+      "width_mm": 6891,
+      "length_mm": 3523,
+      "height_mm": 2190,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "LPU-002",
+      "type_name": "LPU",
+      "category": "large_process",
+      "center_x_mm": 21508,
+      "center_y_mm": 22900,
+      "width_mm": 6669,
+      "length_mm": 4193,
+      "height_mm": 2452,
+      "rotation_deg": 90.0
+    },
+    {
+      "tag": "LPU-003",
+      "type_name": "LPU",
+      "category": "large_process",
+      "center_x_mm": 7694,
+      "center_y_mm": 21425,
+      "width_mm": 7087,
+      "length_mm": 2904,
+      "height_mm": 3113,
+      "rotation_deg": 90.0
+    },
+    {
+      "tag": "UTL-001",
+      "type_name": "UTL",
+      "category": "utility",
+      "center_x_mm": 17408,
+      "center_y_mm": 11003,
+      "width_mm": 2913,
+      "length_mm": 2400,
+      "height_mm": 2208,
+      "rotation_deg": 90.0
+    },
+    {
+      "tag": "UTL-002",
+      "type_name": "UTL",
+      "category": "utility",
+      "center_x_mm": 22979,
+      "center_y_mm": 9588,
+      "width_mm": 3261,
+      "length_mm": 2742,
+      "height_mm": 2726,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "VES-001",
+      "type_name": "VES",
+      "category": "vessel",
+      "center_x_mm": 2780,
+      "center_y_mm": 23278,
+      "width_mm": 1861,
+      "length_mm": 1867,
+      "height_mm": 5635,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "VES-002",
+      "type_name": "VES",
+      "category": "vessel",
+      "center_x_mm": 20023,
+      "center_y_mm": 5953,
+      "width_mm": 2404,
+      "length_mm": 3286,
+      "height_mm": 3199,
+      "rotation_deg": 90.0
+    },
+    {
+      "tag": "VES-003",
+      "type_name": "VES",
+      "category": "vessel",
+      "center_x_mm": 26515,
+      "center_y_mm": 3078,
+      "width_mm": 2061,
+      "length_mm": 3023,
+      "height_mm": 4645,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "HAZ-001",
+      "type_name": "HAZ",
+      "category": "hazardous",
+      "center_x_mm": 7142,
+      "center_y_mm": 10813,
+      "width_mm": 3202,
+      "length_mm": 2040,
+      "height_mm": 2394,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "HAZ-002",
+      "type_name": "HAZ",
+      "category": "hazardous",
+      "center_x_mm": 24964,
+      "center_y_mm": 6553,
+      "width_mm": 2205,
+      "length_mm": 1539,
+      "height_mm": 2937,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "CTL-001",
+      "type_name": "CTL",
+      "category": "control",
+      "center_x_mm": 25580,
+      "center_y_mm": 25563,
+      "width_mm": 1987,
+      "length_mm": 1297,
+      "height_mm": 1964,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "SRV-001",
+      "type_name": "SRV",
+      "category": "service",
+      "center_x_mm": 12586,
+      "center_y_mm": 18804,
+      "width_mm": 1222,
+      "length_mm": 1956,
+      "height_mm": 2057,
+      "rotation_deg": 0.0
+    },
+    {
+      "tag": "SRV-002",
+      "type_name": "SRV",
+      "category": "service",
+      "center_x_mm": 6587,
+      "center_y_mm": 2519,
+      "width_mm": 1366,
+      "length_mm": 1481,
+      "height_mm": 2416,
+      "rotation_deg": 90.0
+    },
+    {
+      "tag": "SRV-003",
+      "type_name": "SRV",
+      "category": "service",
+      "center_x_mm": 22509,
+      "center_y_mm": 2143,
+      "width_mm": 1130,
+      "length_mm": 1944,
+      "height_mm": 2006,
+      "rotation_deg": 90.0
+    }
+  ],
+  "reserved_corridors": [
+    {
+      "x_min_mm": 0,
+      "y_min_mm": 12638,
+      "x_max_mm": 28742,
+      "y_max_mm": 14838
+    },
+    {
+      "x_min_mm": 13271,
+      "y_min_mm": 0,
+      "x_max_mm": 15471,
+      "y_max_mm": 27475
+    }
+  ]
+}
